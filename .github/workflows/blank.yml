@@ -1,8 +1,7 @@
-name: Pro_AntiCrash_Final_V6
+name: Pro_Clean_Build_Stable_V7
 on: 
   push:
     paths:
-      - 'script.js'
       - 'original.apk'
   workflow_dispatch: 
 
@@ -13,36 +12,34 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java 17
+      - name: Setup Java 11 (More Stable for Old LSPatch)
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '11'
           distribution: 'temurin'
 
-      - name: Download Tools
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Download Stable Tools
         run: |
-          gh release download --repo LSPosed/LSPatch --pattern "*.jar" --output lspatch.jar
-          gh release download --repo patrickfav/uber-apk-signer --pattern "*.jar" --output uber-apk-signer.jar
+          # العودة للإصدار المستقر 0.5 لتجنب مشاكل النسخ التجريبية
+          curl -L -o lspatch.jar https://github.com/LSPosed/LSPatch/releases/download/v0.5/lspatch.jar
+          curl -L -o uber-apk-signer.jar https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar
 
-      - name: Inject Safe Hook (Mode 1)
+      - name: Inject Hook (Standard Mode)
         run: |
-          # استخدام المستوى 1 (Package Manager Hook) لتقليل التدخل في النظام
-          # هذا يحل مشكلة الكراش في واجهة MIUI
+          # استخدام وضع التوافق القياسي
           java -jar lspatch.jar original.apk -m script.js -l 1 -f -v
           
           PATCHED=$(find . -name "*-lspatched.apk" | head -n 1)
-          mv "$PATCHED" safe_app.apk
+          mv "$PATCHED" stable_build.apk
 
       - name: Sign APK
         run: |
           rm -f original.apk
-          # إعادة التوقيع ضرورية
-          java -jar uber-apk-signer.jar --apks safe_app.apk --allowResign --overwrite
+          # توقيع نظيف
+          java -jar uber-apk-signer.jar --apks stable_build.apk --allowResign --overwrite
           
-      - name: Upload Result
+      - name: Deliver Result
         uses: actions/upload-artifact@v4
         with:
-          name: Anti-Crash-App
+          name: Final-Stable-App
           path: ./*.apk
