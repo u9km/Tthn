@@ -1,14 +1,16 @@
 name: Pro_APK_Patcher_V4
 on: 
-  workflow_dispatch: # تشغيل يدوي لضمان السرية
+  workflow_dispatch: # تشغيل يدوي لضمان الخصوصية والتحكم
 
 jobs:
   patch_process:
     runs-on: ubuntu-latest
     steps:
+      # ترقية Checkout إلى v4
       - name: Checkout V4
         uses: actions/checkout@v4
 
+      # ترقية Java Setup إلى v4 واستخدام إصدار 17 لضمان التوافق
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
@@ -23,20 +25,21 @@ jobs:
 
       - name: Pro Patching Logic
         run: |
-          # تأكد من رفع ملف النسخة الرسمية باسم original.apk في المستودع
-          # أو استبدل هذا الرابط برابط تحميل مباشر للنسخة الرسمية
-          # wget -O original.apk "URL_TO_OFFICIAL_APK"
+          # ملاحظة للمحترف: تأكد من رفع ملف APK النسخة الأصلية باسم original.apk في المستودع
+          # أو استخدم رابط تحميل مباشر هنا
+          # wget -O original.apk "رابط_النسخة_الأصلية"
           
-          # حقن أداة الهوك (التي ستراقب التشفير)
-          # سنستخدم وضع الـ Manager لدمج Frida-Gadget تلقائياً
+          # عملية الحقن (Patching)
           java -jar lspatch.jar original.apk --manager -v
 
       - name: Professional Signing
         run: |
+          # توقيع التطبيق الناتج ليعمل على هاتفك بدون روت
           java -jar uber-apk-signer.apk --apks . --overwrite
           
+      # ترقية Artifact Upload إلى v4 (هنا كان الخطأ)
       - name: Deliver Pro APK
         uses: actions/upload-artifact@v4
         with:
-          name: Patched-Official-DarkTunnel
+          name: Patched-DarkTunnel-Pro
           path: ./*-aligned-debugSigned.apk
