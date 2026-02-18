@@ -1,4 +1,4 @@
-name: Pro_Ultimate_Local_Patcher_V4
+name: Pro_Ultimate_Local_Fix_V4_6
 on: 
   push:
     paths:
@@ -21,33 +21,33 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Download Professional Tools
+      - name: Download Tools
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # تحميل أحدث إصدار من LSPatch و Uber Signer
           gh release download --repo LSPosed/LSPatch --pattern "*.jar" --output lspatch.jar
           gh release download --repo patrickfav/uber-apk-signer --pattern "*.jar" --output uber-apk-signer.jar
 
-      - name: Verification
+      - name: Inject Local Hook (The Spy)
         run: |
-          if [ ! -f original.apk ]; then echo "❌ original.apk missing"; exit 1; fi
-
-      - name: Inject Local Spy Hook (Standalone Mode)
-        run: |
-          # وضع -l (Local) يدمج المشغل داخل التطبيق مباشرة لضمان الفتح بدون تطبيقات إضافية
-          # تم إضافة --force لضمان تجاوز أي تعارضات سابقة
+          # وضع -l يدمج الكود داخل التطبيق ليعمل بدون روت وبدون مدير تطبيقات
           java -jar lspatch.jar original.apk -l --force -v
+          
+          # خطوة برو: التأكد من وجود الملف المحقون ونقله للمجلد الرئيسي باسم واضح
+          # LSPatch ينتج ملفاً ينتهي بـ -lspatched.apk
+          find . -name "*-lspatched.apk" -exec mv {} patched_ready.apk \;
 
-      - name: Professional Forced Signing
+      - name: Professional Signing (Forced)
         run: |
-          # حذف النسخة الأصلية لتركيز التوقيع على النسخة المحقونة فقط
+          # الآن الأداة ستجد ملف patched_ready.apk بالتأكيد
+          # حذف الملف الأصلي لتجنب أي تداخل
           rm -f original.apk
-          # استخدام --allowResign لإجبار الأداة على إصلاح التوقيع المكسور
-          java -jar uber-apk-signer.jar -a . --allowResign --overwrite
+          
+          # توقيع الملف المحقون فقط
+          java -jar uber-apk-signer.jar --apks patched_ready.apk --allowResign --overwrite
           
       - name: Deliver Fixed APK
         uses: actions/upload-artifact@v4
         with:
-          name: Fixed-Spy-App-Local
+          name: Spy-App-NoRoot-Final
           path: ./*.apk
