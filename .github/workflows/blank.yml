@@ -1,9 +1,9 @@
-name: Pro_Ultimate_Auto_Patcher_V4
+name: Pro_Ultimate_Auto_Patcher_V4_Final
 on: 
   push:
     paths:
-      - 'original.apk' # سيبدأ العمل تلقائياً فور رفع ملف بهذا الاسم
-  workflow_dispatch: # يسمح لك بتشغيله يدوياً أيضاً للتحكم الكامل
+      - 'original.apk'
+  workflow_dispatch: 
 
 jobs:
   patch_process:
@@ -12,42 +12,43 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Java 17 (Pro Environment)
+      - name: Setup Java 17 (Stable)
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Download Professional Tools
+      - name: Resilient Tools Download
         run: |
-          # تحميل LSPatch - نسخة مستقرة 0.6
+          # تحميل LSPatch مع خاصية المتابعة -L لضمان عدم تحميل صفحات HTML
           curl -L -o lspatch.jar https://github.com/LSPosed/LSPatch/releases/download/v0.6/lspatch.jar
-          # تحميل Uber APK Signer - نسخة 1.3.0
-          curl -L -o uber-apk-signer.jar https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar
           
-          # التحقق السريع من اكتمال التحميل
-          if [ ! -s lspatch.jar ]; then echo "❌ فشل تحميل lspatch"; exit 1; fi
+          # التحقق من سلامة الملف: إذا فشل، سيحاول التحميل من رابط بديل
+          if ! zip -T lspatch.jar; then
+            echo "⚠️ النسخة الأولى تالفة، جاري التحميل من رابط الطوارئ..."
+            curl -L -o lspatch.jar https://github.com/LSPosed/LSPatch/releases/latest/download/lspatch.jar
+          fi
 
-      - name: Verify Original APK
+          # تحميل Uber APK Signer
+          curl -L -o uber-apk-signer.jar https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar
+
+      - name: APK Verification
         run: |
           if [ ! -f original.apk ]; then
-            echo "❌ خطأ برو: لم يتم العثور على original.apk في المستودع."
-            echo "يرجى رفع ملفك وتسميته original.apk ليبدأ العمل التلقائي."
+            echo "❌ خطأ برو: ارفع ملفك باسم original.apk ليبدأ العمل."
             exit 1
           fi
 
-      - name: Inject Spy Hook (Patching)
+      - name: Inject Spy Hook (The Patch)
         run: |
-          # استخدام وضع الـ Manager لدمج Frida-Gadget والقدرة على استخدام ملفات الـ Hook
-          # سيقوم السكربت بدمج الـ Manager داخل التطبيق
-          java -jar lspatch.jar original.apk --manager -v
+          # تخصيص ذاكرة أكبر للجافا لضمان عدم الانهيار
+          java -Xmx2G -jar lspatch.jar original.apk --manager -v
 
-      - name: Professional APK Signing
+      - name: Professional Signing
         run: |
-          # توقيع التطبيق الناتج ليعمل على هاتفك دون روت وبدون مشاكل حماية
           java -jar uber-apk-signer.jar --apks . --overwrite
           
-      - name: Deliver Patched APK
+      - name: Deliver Result
         uses: actions/upload-artifact@v4
         with:
           name: Patched-Spy-App
