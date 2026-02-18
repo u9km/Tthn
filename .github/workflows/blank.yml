@@ -1,59 +1,23 @@
-name: Pro_Ultimate_Patcher_V4_Fixed
-on: 
-  push:
-    paths:
-      - 'original.apk'
-  workflow_dispatch: 
-
-jobs:
-  patch_process:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout V4
-        uses: actions/checkout@v4
-
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Download & Verify Tools
+      - name: Dynamic Tools Installation (Smart Search)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # تحميل LSPatch باستخدام GitHub CLI (أضمن طريقة للبرو)
-          gh release download --repo LSPosed/LSPatch --pattern "lspatch.jar"
+          sudo apt-get update
           
-          # تحميل Uber APK Signer
-          gh release download --repo patrickfav/uber-apk-signer --pattern "*.jar" -O uber-apk-signer.jar
+          # تحميل أحدث إصدار من LSPatch مهما كان اسمه
+          # سنبحث عن أول ملف ينتهي بـ .jar ونقوم بتسميته lspatch.jar
+          gh release download --repo LSPosed/LSPatch --pattern "*.jar"
+          mv *.jar lspatch.jar || echo "Already named correctly"
           
-          # التحقق من سلامة الملفات (إذا كان الملف تالفاً سيتوقف السكربت هنا فوراً)
-          if ! zip -T lspatch.jar; then
-            echo "❌ خطأ برو: ملف lspatch.jar تالف! جاري محاولة التحميل البديل..."
-            curl -L -o lspatch.jar https://github.com/LSPosed/LSPatch/releases/download/v0.6/lspatch.jar
+          # تحميل Uber APK Signer بنفس الطريقة الذكية
+          gh release download --repo patrickfav/uber-apk-signer --pattern "*.jar"
+          # إعادة تسمية الملف ليكون موحداً للسكربت
+          find . -name "uber-apk-signer*.jar" -exec mv {} uber-apk-signer.jar \;
+
+      - name: Pro Verification
+        run: |
+          # فحص إذا تم التحميل بنجاح
+          if [ ! -f lspatch.jar ]; then
+             echo "❌ فشل تحميل LSPatch! جاري التحميل برابط مباشر احتياطي..."
+             curl -L -o lspatch.jar https://github.com/LSPosed/LSPatch/releases/download/v0.6/lspatch.jar
           fi
-
-      - name: Pre-flight Verification
-        run: |
-          if [ ! -f original.apk ]; then
-            echo "❌ ملف original.apk غير موجود! ارفع الملف للمستودع ليبدأ المصنع."
-            exit 1
-          fi
-
-      - name: Inject Spy Hook (Patching)
-        run: |
-          # استخدام جافا لتشغيل الأداة مع زيادة الذاكرة المخصصة (Pro Tip)
-          java -Xmx2G -jar lspatch.jar original.apk --manager -v
-
-      - name: Professional Signing
-        run: |
-          java -jar uber-apk-signer.jar --apks . --overwrite
-          
-      - name: Deliver Result
-        uses: actions/upload-artifact@v4
-        with:
-          name: Patched-DarkTunnel-Pro
-          path: ./*-aligned-debugSigned.apk
