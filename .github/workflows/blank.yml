@@ -1,4 +1,4 @@
-name: Pro_Xiaomi_Fix_V5_4
+name: Pro_Final_Xiaomi_Compatibility_V5_5
 on: 
   push:
     paths:
@@ -25,22 +25,23 @@ jobs:
           gh release download --repo LSPosed/LSPatch --pattern "*.jar" --output lspatch.jar
           gh release download --repo patrickfav/uber-apk-signer --pattern "*.jar" --output uber-apk-signer.jar
 
-      - name: Inject Hook (L2 Bypass + Script)
+      - name: Inject Hook (Compatibility Mode)
         run: |
-          # دمج ملف script.js مع تفعيل مستوى الحماية 2 لمنع الانهيار
-          java -jar lspatch.jar original.apk -m script.js -l 2 -f -v
+          # استخدام مستوى 1 بدلاً من 2 لزيادة التوافق مع أندرويد 13/14
+          # ودمج السكربت مباشرة مع خيار -f للإجبار
+          java -jar lspatch.jar original.apk -m script.js -l 1 -f -v
           
           PATCHED_NAME=$(find . -name "*-lspatched.apk" | head -n 1)
-          mv "$PATCHED_NAME" ready_for_signing.apk
+          mv "$PATCHED_NAME" ready_to_sign.apk
 
       - name: Professional Signing
         run: |
           rm -f original.apk
-          # إعادة التوقيع لضمان عمل التطبيق بدون روت
-          java -jar uber-apk-signer.jar --apks ready_for_signing.apk --allowResign --overwrite
+          # استخدام --allowResign هو "المفتاح" لمنع الكراش الناتج عن التوقيع
+          java -jar uber-apk-signer.jar --apks ready_to_sign.apk --allowResign --overwrite
           
-      - name: Deliver Fixed APK
+      - name: Deliver Result
         uses: actions/upload-artifact@v4
         with:
-          name: Spy-App-Xiaomi-Fix
+          name: Spy-App-Xiaomi-V5.5
           path: ./*.apk
