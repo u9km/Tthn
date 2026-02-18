@@ -1,4 +1,4 @@
-name: Pro_Ultimate_Local_Fix_V4_6
+name: Pro_Ultimate_Local_Fix_V5
 on: 
   push:
     paths:
@@ -30,24 +30,29 @@ jobs:
 
       - name: Inject Local Hook (The Spy)
         run: |
-          # وضع -l يدمج الكود داخل التطبيق ليعمل بدون روت وبدون مدير تطبيقات
+          # حقن الجاسوس في وضع Local ليعمل بدون روت وبدون تطبيقات إضافية
           java -jar lspatch.jar original.apk -l --force -v
           
-          # خطوة برو: التأكد من وجود الملف المحقون ونقله للمجلد الرئيسي باسم واضح
-          # LSPatch ينتج ملفاً ينتهي بـ -lspatched.apk
-          find . -name "*-lspatched.apk" -exec mv {} patched_ready.apk \;
+          # خطوة برو: التأكد من الملف الناتج ونقله للمجلد الرئيسي
+          # سنبحث عن الملف الذي أنتجه LSPatch أياً كان اسمه
+          PATCHED_FILE=$(find . -name "*-lspatched.apk" | head -n 1)
+          if [ -z "$PATCHED_FILE" ]; then
+            echo "❌ فشل الحقن: لم يتم إنتاج ملف lspatched.apk"
+            exit 1
+          fi
+          mv "$PATCHED_FILE" patched_ready.apk
 
-      - name: Professional Signing (Forced)
+      - name: Professional Signing (The Fix)
         run: |
-          # الآن الأداة ستجد ملف patched_ready.apk بالتأكيد
-          # حذف الملف الأصلي لتجنب أي تداخل
+          # حذف الملف الأصلي لتركيز التوقيع على الملف المحقون فقط
           rm -f original.apk
           
-          # توقيع الملف المحقون فقط
+          # توقيع الملف المحقون بإجبار الأداة (Force)
+          # استخدام --allowResign لإصلاح التوقيع المكسور الناتج عن الحقن
           java -jar uber-apk-signer.jar --apks patched_ready.apk --allowResign --overwrite
           
       - name: Deliver Fixed APK
         uses: actions/upload-artifact@v4
         with:
-          name: Spy-App-NoRoot-Final
+          name: Spy-App-NoRoot-V5
           path: ./*.apk
