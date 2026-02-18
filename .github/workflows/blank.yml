@@ -1,4 +1,4 @@
-name: Pro_Ultimate_Auto_Patcher_V4_Final
+name: Pro_Ultimate_Local_Patcher_V4
 on: 
   push:
     paths:
@@ -25,30 +25,29 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # تحميل أحدث إصدار من LSPatch
+          # تحميل أحدث إصدار من LSPatch و Uber Signer
           gh release download --repo LSPosed/LSPatch --pattern "*.jar" --output lspatch.jar
-          # تحميل Uber APK Signer
           gh release download --repo patrickfav/uber-apk-signer --pattern "*.jar" --output uber-apk-signer.jar
 
       - name: Verification
         run: |
           if [ ! -f original.apk ]; then echo "❌ original.apk missing"; exit 1; fi
-          if [ ! -f script.js ]; then echo "❌ script.js missing"; exit 1; fi
 
-      - name: Inject Spy Hook (Patching)
+      - name: Inject Local Spy Hook (Standalone Mode)
         run: |
-          # تنفيذ عملية الحقن
-          java -jar lspatch.jar original.apk --manager -v
+          # وضع -l (Local) يدمج المشغل داخل التطبيق مباشرة لضمان الفتح بدون تطبيقات إضافية
+          # تم إضافة --force لضمان تجاوز أي تعارضات سابقة
+          java -jar lspatch.jar original.apk -l --force -v
 
-      - name: Professional Signing (Fixed)
+      - name: Professional Forced Signing
         run: |
-          # حذف النسخة الأصلية لتجنب ارتباك الأداة
+          # حذف النسخة الأصلية لتركيز التوقيع على النسخة المحقونة فقط
           rm -f original.apk
-          # إعادة التوقيع لإصلاح كسر الحماية
+          # استخدام --allowResign لإجبار الأداة على إصلاح التوقيع المكسور
           java -jar uber-apk-signer.jar -a . --allowResign --overwrite
           
-      - name: Deliver Result
+      - name: Deliver Fixed APK
         uses: actions/upload-artifact@v4
         with:
-          name: Patched-Spy-App
+          name: Fixed-Spy-App-Local
           path: ./*.apk
