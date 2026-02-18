@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - 'original.apk'
+      - 'script.js'
   workflow_dispatch: 
 
 jobs:
@@ -20,25 +21,31 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Smart Tools Download
+      - name: Download Professional Tools
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # تحميل أحدث إصدار من LSPatch
           gh release download --repo LSPosed/LSPatch --pattern "*.jar" --output lspatch.jar
+          # تحميل Uber APK Signer
           gh release download --repo patrickfav/uber-apk-signer --pattern "*.jar" --output uber-apk-signer.jar
 
-      - name: Inject Spy Hook (The Patch)
+      - name: Verification
         run: |
           if [ ! -f original.apk ]; then echo "❌ original.apk missing"; exit 1; fi
-          # تنفيذ الحقن
+          if [ ! -f script.js ]; then echo "❌ script.js missing"; exit 1; fi
+
+      - name: Inject Spy Hook (Patching)
+        run: |
+          # تنفيذ عملية الحقن
           java -jar lspatch.jar original.apk --manager -v
 
-      - name: Professional Signing (Fixed Logic)
+      - name: Professional Signing (Fixed)
         run: |
-          # حذف الملف الأصلي قبل التوقيع لتركيز الأداة على الملف المحقون فقط
-          rm original.apk
-          # فرض إعادة التوقيع (Force Re-sign)
-          java -jar uber-apk-signer.jar --apks . --force-sig-re-sign --allowResign --overwrite
+          # حذف النسخة الأصلية لتجنب ارتباك الأداة
+          rm -f original.apk
+          # إعادة التوقيع لإصلاح كسر الحماية
+          java -jar uber-apk-signer.jar -a . --allowResign --overwrite
           
       - name: Deliver Result
         uses: actions/upload-artifact@v4
