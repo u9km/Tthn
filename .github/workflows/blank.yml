@@ -5,7 +5,7 @@ on:
 jobs:
   patch_process:
     runs-on: ubuntu-latest
-    permissions: # إضافة صلاحيات للقراءة من المستودعات العامة
+    permissions:
       contents: read
     steps:
       - name: Checkout V4
@@ -17,24 +17,26 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Dynamic Tools Installation (No more 404)
+      - name: Dynamic Tools Installation (Auth Fixed)
+        # هنا نقوم بحقن التوكن ليعمل الـ gh بدون أخطاء
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           sudo apt-get update
-          # استخدام GitHub CLI لتحميل أحدث إصدار من LSPatch تلقائياً
+          # تحميل أحدث إصدار من LSPatch
           gh release download --repo LSPosed/LSPatch --pattern "lspatch.jar"
           # تحميل أحدث إصدار من uber-apk-signer
           gh release download --repo patrickfav/uber-apk-signer --pattern "*.jar" -O uber-apk-signer.jar
 
       - name: Pro Patching Logic
         run: |
-          # تأكد من وجود ملف original.apk في مستودعك
-          # إذا كنت تريد تحميله برابط، تأكد من صحة الرابط
+          # تأكد من رفع ملف original.apk في مستودعك
           if [ ! -f original.apk ]; then
-            echo "❌ ملف original.apk غير موجود في المستودع!"
+            echo "❌ خطأ: ملف original.apk غير موجود!"
             exit 1
           fi
           
-          # تنفيذ الحقن
+          # تنفيذ عملية الحقن
           java -jar lspatch.jar original.apk --manager -v
 
       - name: Professional Signing
@@ -44,5 +46,5 @@ jobs:
       - name: Deliver Pro APK
         uses: actions/upload-artifact@v4
         with:
-          name: Patched-DarkTunnel-Final
+          name: Patched-DarkTunnel-Pro
           path: ./*-aligned-debugSigned.apk
