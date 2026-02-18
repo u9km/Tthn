@@ -1,45 +1,48 @@
 name: Pro_APK_Patcher_V4
 on: 
-  workflow_dispatch: # تشغيل يدوي لضمان الخصوصية والتحكم
+  workflow_dispatch: 
 
 jobs:
   patch_process:
     runs-on: ubuntu-latest
+    permissions: # إضافة صلاحيات للقراءة من المستودعات العامة
+      contents: read
     steps:
-      # ترقية Checkout إلى v4
       - name: Checkout V4
         uses: actions/checkout@v4
 
-      # ترقية Java Setup إلى v4 واستخدام إصدار 17 لضمان التوافق
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Global Tools Installation
+      - name: Dynamic Tools Installation (No more 404)
         run: |
           sudo apt-get update
-          wget https://github.com/LSPosed/LSPatch/releases/latest/download/lspatch.jar
-          wget https://github.com/patrickfav/uber-apk-signer/releases/latest/download/uber-apk-signer.jar
+          # استخدام GitHub CLI لتحميل أحدث إصدار من LSPatch تلقائياً
+          gh release download --repo LSPosed/LSPatch --pattern "lspatch.jar"
+          # تحميل أحدث إصدار من uber-apk-signer
+          gh release download --repo patrickfav/uber-apk-signer --pattern "*.jar" -O uber-apk-signer.jar
 
       - name: Pro Patching Logic
         run: |
-          # ملاحظة للمحترف: تأكد من رفع ملف APK النسخة الأصلية باسم original.apk في المستودع
-          # أو استخدم رابط تحميل مباشر هنا
-          # wget -O original.apk "رابط_النسخة_الأصلية"
+          # تأكد من وجود ملف original.apk في مستودعك
+          # إذا كنت تريد تحميله برابط، تأكد من صحة الرابط
+          if [ ! -f original.apk ]; then
+            echo "❌ ملف original.apk غير موجود في المستودع!"
+            exit 1
+          fi
           
-          # عملية الحقن (Patching)
+          # تنفيذ الحقن
           java -jar lspatch.jar original.apk --manager -v
 
       - name: Professional Signing
         run: |
-          # توقيع التطبيق الناتج ليعمل على هاتفك بدون روت
           java -jar uber-apk-signer.apk --apks . --overwrite
           
-      # ترقية Artifact Upload إلى v4 (هنا كان الخطأ)
       - name: Deliver Pro APK
         uses: actions/upload-artifact@v4
         with:
-          name: Patched-DarkTunnel-Pro
+          name: Patched-DarkTunnel-Final
           path: ./*-aligned-debugSigned.apk
