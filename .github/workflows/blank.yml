@@ -1,4 +1,4 @@
-name: Pro_Final_Fix_V5_2
+name: Pro_Xiaomi_Fix_V5_4
 on: 
   push:
     paths:
@@ -9,7 +9,7 @@ jobs:
   patch_process:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Java 17
@@ -25,24 +25,22 @@ jobs:
           gh release download --repo LSPosed/LSPatch --pattern "*.jar" --output lspatch.jar
           gh release download --repo patrickfav/uber-apk-signer --pattern "*.jar" --output uber-apk-signer.jar
 
-      - name: Inject Hook (Local Mode Fixed)
+      - name: Inject Hook (L2 Bypass + Script)
         run: |
-          # تصحيح الأمر: إضافة الرقم 2 لخيار -l لتخطي الحماية بنجاح
-          java -jar lspatch.jar original.apk -l 2 -f -v
+          # دمج ملف script.js مع تفعيل مستوى الحماية 2 لمنع الانهيار
+          java -jar lspatch.jar original.apk -m script.js -l 2 -f -v
           
-          # البحث عن الملف الناتج وتجهيزه
           PATCHED_NAME=$(find . -name "*-lspatched.apk" | head -n 1)
-          if [ -z "$PATCHED_NAME" ]; then echo "❌ لم يتم إنتاج ملف"; exit 1; fi
           mv "$PATCHED_NAME" ready_for_signing.apk
 
       - name: Professional Signing
         run: |
           rm -f original.apk
-          # إعادة التوقيع لضمان التثبيت بدون روت
+          # إعادة التوقيع لضمان عمل التطبيق بدون روت
           java -jar uber-apk-signer.jar --apks ready_for_signing.apk --allowResign --overwrite
           
       - name: Deliver Fixed APK
         uses: actions/upload-artifact@v4
         with:
-          name: Spy-App-V5.2
+          name: Spy-App-Xiaomi-Fix
           path: ./*.apk
