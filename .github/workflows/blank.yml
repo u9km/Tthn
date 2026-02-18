@@ -1,7 +1,8 @@
-name: Pro_Xiaomi_Ultra_Fix_V5_6
+name: Pro_AntiCrash_Final_V6
 on: 
   push:
     paths:
+      - 'script.js'
       - 'original.apk'
   workflow_dispatch: 
 
@@ -25,22 +26,23 @@ jobs:
           gh release download --repo LSPosed/LSPatch --pattern "*.jar" --output lspatch.jar
           gh release download --repo patrickfav/uber-apk-signer --pattern "*.jar" --output uber-apk-signer.jar
 
-      - name: Inject Hook (Level 2 Bypass)
+      - name: Inject Safe Hook (Mode 1)
         run: |
-          # دمج السكربت script.js واستخدام -l 2 لتخطى حماية شاومي الصارمة
-          java -jar lspatch.jar original.apk -m script.js -l 2 -f -v
+          # استخدام المستوى 1 (Package Manager Hook) لتقليل التدخل في النظام
+          # هذا يحل مشكلة الكراش في واجهة MIUI
+          java -jar lspatch.jar original.apk -m script.js -l 1 -f -v
           
-          PATCHED_NAME=$(find . -name "*-lspatched.apk" | head -n 1)
-          mv "$PATCHED_NAME" ready_to_sign.apk
+          PATCHED=$(find . -name "*-lspatched.apk" | head -n 1)
+          mv "$PATCHED" safe_app.apk
 
-      - name: Professional Signing
+      - name: Sign APK
         run: |
           rm -f original.apk
-          # استخدام --allowResign أساسي جداً لمنع الكراش
-          java -jar uber-apk-signer.jar --apks ready_to_sign.apk --allowResign --overwrite
+          # إعادة التوقيع ضرورية
+          java -jar uber-apk-signer.jar --apks safe_app.apk --allowResign --overwrite
           
-      - name: Deliver Result
+      - name: Upload Result
         uses: actions/upload-artifact@v4
         with:
-          name: Spy-App-Xiaomi-V5.6
+          name: Anti-Crash-App
           path: ./*.apk
