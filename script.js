@@ -1,38 +1,40 @@
-// Safe Mode Spy Hook: Prevents crashes on null keys
+/* Anti-Crash Spy Hook
+   هذا السكربت مصمم ليتجاهل الأخطاء بدلاً من إغلاق التطبيق
+*/
 Java.perform(function () {
+    // تغليف العملية كاملة لمنع أي انهيار مفاجئ
     try {
         var Cipher = Java.use("javax.crypto.Cipher");
-        console.log("🚀 [PRO] Spy Engine Ready (Safe Mode)...");
+        console.log("✅ [SAFE MODE] Spy Engine Attached...");
 
-        // هوك آمن لمنع الانهيار
         Cipher.init.overload('int', 'java.security.Key', 'java.security.spec.AlgorithmParameterSpec').implementation = function (opmode, key, params) {
+            
+            // بداية منطقة الخطر - نستخدم Try Catch داخلي
             try {
-                // تأكد أن المفتاح موجود وليس فارغاً
+                // 1. فحص هل المفتاح موجود أصلاً؟
                 if (key !== null) {
                     var algo = key.getAlgorithm();
                     
-                    // التركيز فقط على AES وتجاهل الباقي لمنع التعارض
+                    // 2. هل هو AES؟
                     if (algo === "AES") {
                         var keyBytes = key.getEncoded();
                         
-                        // فحص قاتل: إذا كان المفتاح محمياً ولا يمكن قراءته، لا تحاول تحويله
+                        // 3. هل يمكن قراءة البايتات؟ (بعض المفاتيح محمية وتعود بـ null)
                         if (keyBytes !== null) {
                             var hexKey = Array.from(new Uint8Array(keyBytes)).map(b => b.toString(16).padStart(2, '0')).join('');
                             console.log("🔥🔥 [FOUND_KEY]: " + hexKey);
-                        } else {
-                            console.log("⚠️ [WARNING] Key found but it is protected (Hardware Backed).");
                         }
                     }
                 }
-            } catch (e) {
-                // في حال حدوث خطأ، اطبع السبب ولا تغلق التطبيق
-                console.log("❌ [ERROR] inside hook: " + e.message);
+            } catch (error) {
+                // في حال حدوث خطأ، اطبعه في الكونسول ولا توقف التطبيق
+                console.log("⚠️ [HANDLED ERROR]: " + error.message);
             }
-            
-            // أكمل عملية التطبيق الطبيعية حتى لو فشل التجسس
+
+            // أهم خطوة: إكمال عملية التطبيق الأصلية مهما حدث
             return this.init(opmode, key, params);
         };
     } catch (e) {
-        console.log("❌ [FATAL] Failed to install hook: " + e.message);
+        console.log("❌ [FATAL ERROR]: Could not initialize hook: " + e.message);
     }
 });
