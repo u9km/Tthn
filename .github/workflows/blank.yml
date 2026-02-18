@@ -23,8 +23,8 @@ jobs:
           # تحميل LSPatch مع خاصية المتابعة -L لضمان عدم تحميل صفحات HTML
           curl -L -o lspatch.jar https://github.com/LSPosed/LSPatch/releases/download/v0.6/lspatch.jar
           
-          # التحقق من سلامة الملف: إذا فشل، سيحاول التحميل من رابط بديل
-          if ! zip -T lspatch.jar; then
+          # التحقق من سلامة الملف باستخدام أداة zip (لأن ملف JAR هو ملف مضغوط في الأصل)
+          if ! unzip -t lspatch.jar > /dev/null 2>&1; then
             echo "⚠️ النسخة الأولى تالفة، جاري التحميل من رابط الطوارئ..."
             curl -L -o lspatch.jar https://github.com/LSPosed/LSPatch/releases/latest/download/lspatch.jar
           fi
