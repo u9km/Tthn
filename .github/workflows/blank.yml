@@ -1,4 +1,4 @@
-name: Pro_Final_Fix_V5_1
+name: Pro_Final_Fix_V5_2
 on: 
   push:
     paths:
@@ -25,24 +25,24 @@ jobs:
           gh release download --repo LSPosed/LSPatch --pattern "*.jar" --output lspatch.jar
           gh release download --repo patrickfav/uber-apk-signer --pattern "*.jar" --output uber-apk-signer.jar
 
-      - name: Inject Hook (Local Mode)
+      - name: Inject Hook (Local Mode Fixed)
         run: |
-          # حقن الجاسوس في الملف الموجود بمستودعك
-          java -jar lspatch.jar original.apk -l --force -v
+          # تصحيح الأمر: إضافة الرقم 2 لخيار -l لتخطي الحماية بنجاح
+          java -jar lspatch.jar original.apk -l 2 -f -v
           
-          # البحث عن الملف الناتج وتسميته لضمان العثور عليه
+          # البحث عن الملف الناتج وتجهيزه
           PATCHED_NAME=$(find . -name "*-lspatched.apk" | head -n 1)
+          if [ -z "$PATCHED_NAME" ]; then echo "❌ لم يتم إنتاج ملف"; exit 1; fi
           mv "$PATCHED_NAME" ready_for_signing.apk
 
-      - name: Signing & Clean Up
+      - name: Professional Signing
         run: |
-          # حذف الأصلي لتركيز التوقيع على الملف المعدل
           rm -f original.apk
-          # إعادة التوقيع لإصلاح التوقيع المكسور
+          # إعادة التوقيع لضمان التثبيت بدون روت
           java -jar uber-apk-signer.jar --apks ready_for_signing.apk --allowResign --overwrite
           
       - name: Deliver Fixed APK
         uses: actions/upload-artifact@v4
         with:
-          name: Spy-App-Ready
+          name: Spy-App-V5.2
           path: ./*.apk
