@@ -1,16 +1,13 @@
-name: Pro_Ultimate_Local_Fix_V5
+name: Pro_Final_Fix_V5_1
 on: 
   push:
     paths:
       - 'original.apk'
-      - 'script.js'
   workflow_dispatch: 
 
 jobs:
   patch_process:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -28,31 +25,24 @@ jobs:
           gh release download --repo LSPosed/LSPatch --pattern "*.jar" --output lspatch.jar
           gh release download --repo patrickfav/uber-apk-signer --pattern "*.jar" --output uber-apk-signer.jar
 
-      - name: Inject Local Hook (The Spy)
+      - name: Inject Hook (Local Mode)
         run: |
-          # حقن الجاسوس في وضع Local ليعمل بدون روت وبدون تطبيقات إضافية
+          # حقن الجاسوس في الملف الموجود بمستودعك
           java -jar lspatch.jar original.apk -l --force -v
           
-          # خطوة برو: التأكد من الملف الناتج ونقله للمجلد الرئيسي
-          # سنبحث عن الملف الذي أنتجه LSPatch أياً كان اسمه
-          PATCHED_FILE=$(find . -name "*-lspatched.apk" | head -n 1)
-          if [ -z "$PATCHED_FILE" ]; then
-            echo "❌ فشل الحقن: لم يتم إنتاج ملف lspatched.apk"
-            exit 1
-          fi
-          mv "$PATCHED_FILE" patched_ready.apk
+          # البحث عن الملف الناتج وتسميته لضمان العثور عليه
+          PATCHED_NAME=$(find . -name "*-lspatched.apk" | head -n 1)
+          mv "$PATCHED_NAME" ready_for_signing.apk
 
-      - name: Professional Signing (The Fix)
+      - name: Signing & Clean Up
         run: |
-          # حذف الملف الأصلي لتركيز التوقيع على الملف المحقون فقط
+          # حذف الأصلي لتركيز التوقيع على الملف المعدل
           rm -f original.apk
-          
-          # توقيع الملف المحقون بإجبار الأداة (Force)
-          # استخدام --allowResign لإصلاح التوقيع المكسور الناتج عن الحقن
-          java -jar uber-apk-signer.jar --apks patched_ready.apk --allowResign --overwrite
+          # إعادة التوقيع لإصلاح التوقيع المكسور
+          java -jar uber-apk-signer.jar --apks ready_for_signing.apk --allowResign --overwrite
           
       - name: Deliver Fixed APK
         uses: actions/upload-artifact@v4
         with:
-          name: Spy-App-NoRoot-V5
+          name: Spy-App-Ready
           path: ./*.apk
