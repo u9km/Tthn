@@ -24,39 +24,24 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # تحميل LSPatch - البحث عن أي ملف JAR في آخر إصدار
-          gh release download --repo LSPosed/LSPatch --pattern "*.jar" --output lspatch.jar || \
-          curl -L -o lspatch.jar https://github.com/LSPosed/LSPatch/releases/download/v0.6/lspatch.jar
-          
-          # تحميل Uber APK Signer
-          gh release download --repo patrickfav/uber-apk-signer --pattern "*.jar" --output uber-apk-signer.jar || \
-          curl -L -o uber-apk-signer.jar https://github.com/patrickfav/uber-apk-signer/releases/download/v1.3.0/uber-apk-signer-1.3.0.jar
-          
-          # فحص حجم الملف: إذا كان أقل من 100 كيلوبايت فهو تالف
-          FILESIZE=$(stat -c%s "lspatch.jar")
-          if [ $FILESIZE -lt 100000 ]; then
-            echo "❌ الملف المحمل تالف (حجم صغير جداً). جاري محاولة التحميل من مصدر بديل..."
-            curl -L -o lspatch.jar "https://github.com/LSPosed/LSPatch/releases/download/v0.6/lspatch.jar"
-          fi
-
-      - name: APK Verification
-        run: |
-          if [ ! -f original.apk ]; then
-            echo "❌ خطأ برو: ارفع ملفك باسم original.apk ليبدأ العمل."
-            exit 1
-          fi
+          gh release download --repo LSPosed/LSPatch --pattern "*.jar" --output lspatch.jar
+          gh release download --repo patrickfav/uber-apk-signer --pattern "*.jar" --output uber-apk-signer.jar
 
       - name: Inject Spy Hook (The Patch)
         run: |
-          # تشغيل عملية الحقن مع تجاهل الأخطاء غير الحرجة
+          if [ ! -f original.apk ]; then echo "❌ original.apk missing"; exit 1; fi
+          # تنفيذ الحقن
           java -jar lspatch.jar original.apk --manager -v
 
-      - name: Professional Signing
+      - name: Professional Signing (Fixed Logic)
         run: |
-          java -jar uber-apk-signer.jar --apks . --overwrite
+          # حذف الملف الأصلي قبل التوقيع لتركيز الأداة على الملف المحقون فقط
+          rm original.apk
+          # فرض إعادة التوقيع (Force Re-sign)
+          java -jar uber-apk-signer.jar --apks . --force-sig-re-sign --allowResign --overwrite
           
       - name: Deliver Result
         uses: actions/upload-artifact@v4
         with:
           name: Patched-Spy-App
-          path: ./*-aligned-debugSigned.apk
+          path: ./*.apk
